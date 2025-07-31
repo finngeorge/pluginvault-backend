@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plugin Vault Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1rem;
+        }
+        
+        .content {
+            padding: 30px;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-label {
+            color: #6c757d;
+            margin-top: 5px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+        }
+        
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+        
+        .plugin-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .plugin-type {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .plugin-type h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+        }
+        
+        .plugin-list {
+            list-style: none;
+        }
+        
+        .plugin-item {
+            background: white;
+            padding: 10px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            border: 1px solid #e9ecef;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .plugin-name {
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .plugin-size {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .upload-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .upload-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr auto;
+            gap: 15px;
+            align-items: end;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-sm {
+            padding: 5px 10px;
+            font-size: 0.9rem;
+        }
+        
+        .webdav-info {
+            background: #e3f2fd;
+            border: 1px solid #2196f3;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .webdav-info h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+        
+        .webdav-info code {
+            background: #f5f5f5;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #6c757d;
+        }
+        
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 15px;
+        }
+        
+        @media (max-width: 768px) {
+            .upload-form {
+                grid-template-columns: 1fr;
+            }
+            
+            .plugin-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎵 Plugin Vault</h1>
+            <p>WebDAV Server for Audio Production Plugins</p>
+        </div>
+        
+        <div class="content">
+            <div class="webdav-info">
+                <h3>🌐 WebDAV Connection</h3>
+                <p><strong>URL:</strong> <code id="webdav-url">http://localhost:3000/webdav</code></p>
+                <p><strong>Username:</strong> <code>admin</code> | <strong>Password:</strong> <code>password</code></p>
+                <p>Connect via macOS Finder: <code>Cmd + K</code> → Enter WebDAV URL</p>
+            </div>
+            
+            <div class="stats" id="stats">
+                <div class="loading">Loading statistics...</div>
+            </div>
+            
+            <div class="section">
+                <h2>📤 Upload Plugin</h2>
+                <div class="upload-section">
+                    <form class="upload-form" id="upload-form">
+                        <div class="form-group">
+                            <label for="plugin-type">Plugin Type</label>
+                            <select id="plugin-type" required>
+                                <option value="">Select type...</option>
+                                <option value="vst">VST</option>
+                                <option value="vst3">VST3</option>
+                                <option value="au">AU (Audio Unit)</option>
+                                <option value="aax">AAX</option>
+                                <option value="standalone">Standalone</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="plugin-name">Plugin Name</label>
+                            <input type="text" id="plugin-name" placeholder="e.g., my-plugin.vst3" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="plugin-file">Plugin File</label>
+                            <input type="file" id="plugin-file" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary">Upload Plugin</button>
+                    </form>
+                </div>
+            </div>
+            
+            <div class="section">
+                <h2>📁 Plugin Library</h2>
+                <div class="plugin-grid" id="plugin-grid">
+                    <div class="loading">Loading plugins...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api';
+        
+        // Update WebDAV URL based on current host
+        document.getElementById('webdav-url').textContent = `${window.location.protocol}//${window.location.host}/webdav`;
+        
+        // Load statistics
+        async function loadStats() {
+            try {
+                const response = await fetch(`${API_BASE}/health`);
+                const data = await response.json();
+                
+                const statsHtml = `
+                    <div class="stat-card">
+                        <div class="stat-number">${data.totalPlugins}</div>
+                        <div class="stat-label">Total Plugins</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.pluginTypes.length}</div>
+                        <div class="stat-label">Plugin Types</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">${data.status}</div>
+                        <div class="stat-label">Server Status</div>
+                    </div>
+                `;
+                
+                document.getElementById('stats').innerHTML = statsHtml;
+            } catch (error) {
+                document.getElementById('stats').innerHTML = '<div class="error">Failed to load statistics</div>';
+            }
+        }
+        
+        // Load plugins
+        async function loadPlugins() {
+            try {
+                const response = await fetch(`${API_BASE}/plugins`);
+                const plugins = await response.json();
+                
+                let html = '';
+                for (const [type, pluginList] of Object.entries(plugins)) {
+                    html += `
+                        <div class="plugin-type">
+                            <h3>${type.toUpperCase()}</h3>
+                            ${pluginList.length === 0 ? '<p style="color: #6c757d;">No plugins</p>' : ''}
+                            <ul class="plugin-list">
+                                ${pluginList.map(plugin => `
+                                    <li class="plugin-item">
+                                        <div>
+                                            <div class="plugin-name">${plugin.name}</div>
+                                            <div class="plugin-size">${formatBytes(plugin.size)}</div>
+                                        </div>
+                                        <button class="btn btn-danger btn-sm" onclick="deletePlugin('${type}', '${plugin.name}')">Delete</button>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                document.getElementById('plugin-grid').innerHTML = html;
+            } catch (error) {
+                document.getElementById('plugin-grid').innerHTML = '<div class="error">Failed to load plugins</div>';
+            }
+        }
+        
+        // Upload plugin
+        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const type = document.getElementById('plugin-type').value;
+            const name = document.getElementById('plugin-name').value;
+            const file = document.getElementById('plugin-file').files[0];
+            
+            if (!type || !name || !file) {
+                alert('Please fill in all fields');
+                return;
+            }
+            
+            try {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const base64Data = e.target.result.split(',')[1];
+                    
+                    const response = await fetch(`${API_BASE}/plugins/upload`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            type,
+                            name,
+                            data: base64Data
+                        })
+                    });
+                    
+                    if (response.ok) {
+                        showMessage('Plugin uploaded successfully!', 'success');
+                        loadStats();
+                        loadPlugins();
+                        document.getElementById('upload-form').reset();
+                    } else {
+                        const error = await response.json();
+                        showMessage(`Upload failed: ${error.error}`, 'error');
+                    }
+                };
+                reader.readAsDataURL(file);
+            } catch (error) {
+                showMessage('Upload failed', 'error');
+            }
+        });
+        
+        // Delete plugin
+        async function deletePlugin(type, name) {
+            if (!confirm(`Are you sure you want to delete ${name}?`)) {
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/plugins/${type}/${encodeURIComponent(name)}`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    showMessage('Plugin deleted successfully!', 'success');
+                    loadStats();
+                    loadPlugins();
+                } else {
+                    const error = await response.json();
+                    showMessage(`Delete failed: ${error.error}`, 'error');
+                }
+            } catch (error) {
+                showMessage('Delete failed', 'error');
+            }
+        }
+        
+        // Utility functions
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        function showMessage(message, type) {
+            const messageDiv = document.createElement('div');
+            messageDiv.className = type;
+            messageDiv.textContent = message;
+            document.querySelector('.content').insertBefore(messageDiv, document.querySelector('.content').firstChild);
+            
+            setTimeout(() => {
+                messageDiv.remove();
+            }, 5000);
+        }
+        
+        // Initialize
+        loadStats();
+        loadPlugins();
+        
+        // Refresh every 30 seconds
+        setInterval(() => {
+            loadStats();
+            loadPlugins();
+        }, 30000);
+    </script>
+</body>
+</html> 
