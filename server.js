@@ -208,6 +208,7 @@ app.options('/webdav/*', (req, res) => {
   res.setHeader('Content-Type', 'text/plain');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Server', 'Plugin Vault WebDAV Server');
   res.status(200).end();
 });
 
@@ -227,6 +228,44 @@ app.head('/webdav/*', (req, res) => {
   res.status(200).end();
 });
 
+// WebDAV PROPFIND request for root
+app.propfind('/webdav', (req, res) => {
+  const stat = fs.statSync(pluginsDir);
+  const files = fs.readdirSync(pluginsDir);
+  const xml = `<?xml version="1.0" encoding="utf-8"?>
+<D:multistatus xmlns:D="DAV:">
+  <D:response>
+    <D:href>/webdav</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype><D:collection/></D:resourcetype>
+        <D:getlastmodified>${stat.mtime.toUTCString()}</D:getlastmodified>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>
+  ${files.map(file => {
+    const fullPath = path.join(pluginsDir, file);
+    const fileStat = fs.statSync(fullPath);
+    const isDirectory = fileStat.isDirectory();
+    return `<D:response>
+    <D:href>/webdav/${file}</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype>${isDirectory ? '<D:collection/>' : ''}</D:resourcetype>
+        <D:getcontentlength>${isDirectory ? '' : fileStat.size}</D:getcontentlength>
+        <D:getlastmodified>${fileStat.mtime.toUTCString()}</D:getlastmodified>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>`;
+  }).join('')}
+</D:multistatus>`;
+  
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.status(207).send(xml);
+});
+
 // WebDAV PROPFIND request (directory listing)
 app.propfind('/webdav/*', (req, res) => {
   const urlPath = req.url.replace('/webdav', '').replace(/^\/+/, '');
@@ -239,10 +278,11 @@ app.propfind('/webdav/*', (req, res) => {
   const stat = fs.statSync(filePath);
   if (stat.isDirectory()) {
     const files = fs.readdirSync(filePath);
+    const baseUrl = req.url.replace(/\/+$/, ''); // Remove trailing slashes
     const xml = `<?xml version="1.0" encoding="utf-8"?>
 <D:multistatus xmlns:D="DAV:">
   <D:response>
-    <D:href>${req.url}</D:href>
+    <D:href>${baseUrl}</D:href>
     <D:propstat>
       <D:prop>
         <D:resourcetype><D:collection/></D:resourcetype>
@@ -256,7 +296,7 @@ app.propfind('/webdav/*', (req, res) => {
     const fileStat = fs.statSync(fullPath);
     const isDirectory = fileStat.isDirectory();
     return `<D:response>
-    <D:href>${req.url}/${file}</D:href>
+    <D:href>${baseUrl}/${file}</D:href>
     <D:propstat>
       <D:prop>
         <D:resourcetype>${isDirectory ? '<D:collection/>' : ''}</D:resourcetype>
