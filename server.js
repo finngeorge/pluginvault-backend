@@ -200,9 +200,22 @@ app.use('/webdav', (req, res, next) => {
   next();
 });
 
-// WebDAV OPTIONS request
+// WebDAV OPTIONS request - CRITICAL for macOS Finder
 app.options('/webdav/*', (req, res) => {
-  res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE');
+  // Set all required headers for macOS Finder
+  res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE, LOCK, UNLOCK');
+  res.setHeader('DAV', '1, 2');
+  res.setHeader('MS-Author-Via', 'DAV');
+  res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Server', 'Plugin Vault WebDAV Server');
+  res.status(200).end();
+});
+
+// WebDAV OPTIONS request for root
+app.options('/webdav', (req, res) => {
+  res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE, LOCK, UNLOCK');
   res.setHeader('DAV', '1, 2');
   res.setHeader('MS-Author-Via', 'DAV');
   res.setHeader('Content-Type', 'text/plain');
@@ -225,6 +238,17 @@ app.head('/webdav/*', (req, res) => {
   res.setHeader('Content-Length', stat.size);
   res.setHeader('Last-Modified', stat.mtime.toUTCString());
   res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('DAV', '1, 2');
+  res.status(200).end();
+});
+
+// WebDAV HEAD request for root
+app.head('/webdav', (req, res) => {
+  const stat = fs.statSync(pluginsDir);
+  res.setHeader('Content-Length', '0');
+  res.setHeader('Last-Modified', stat.mtime.toUTCString());
+  res.setHeader('Content-Type', 'application/octet-stream');
+  res.setHeader('DAV', '1, 2');
   res.status(200).end();
 });
 
@@ -240,6 +264,7 @@ app.propfind('/webdav', (req, res) => {
       <D:prop>
         <D:resourcetype><D:collection/></D:resourcetype>
         <D:getlastmodified>${stat.mtime.toUTCString()}</D:getlastmodified>
+        <D:getcontentlength>0</D:getcontentlength>
       </D:prop>
       <D:status>HTTP/1.1 200 OK</D:status>
     </D:propstat>
@@ -253,7 +278,7 @@ app.propfind('/webdav', (req, res) => {
     <D:propstat>
       <D:prop>
         <D:resourcetype>${isDirectory ? '<D:collection/>' : ''}</D:resourcetype>
-        <D:getcontentlength>${isDirectory ? '' : fileStat.size}</D:getcontentlength>
+        <D:getcontentlength>${isDirectory ? '0' : fileStat.size}</D:getcontentlength>
         <D:getlastmodified>${fileStat.mtime.toUTCString()}</D:getlastmodified>
       </D:prop>
       <D:status>HTTP/1.1 200 OK</D:status>
@@ -263,6 +288,8 @@ app.propfind('/webdav', (req, res) => {
 </D:multistatus>`;
   
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.setHeader('DAV', '1, 2');
+  res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE, LOCK, UNLOCK');
   res.status(207).send(xml);
 });
 
@@ -287,6 +314,7 @@ app.propfind('/webdav/*', (req, res) => {
       <D:prop>
         <D:resourcetype><D:collection/></D:resourcetype>
         <D:getlastmodified>${stat.mtime.toUTCString()}</D:getlastmodified>
+        <D:getcontentlength>0</D:getcontentlength>
       </D:prop>
       <D:status>HTTP/1.1 200 OK</D:status>
     </D:propstat>
@@ -300,7 +328,7 @@ app.propfind('/webdav/*', (req, res) => {
     <D:propstat>
       <D:prop>
         <D:resourcetype>${isDirectory ? '<D:collection/>' : ''}</D:resourcetype>
-        <D:getcontentlength>${isDirectory ? '' : fileStat.size}</D:getcontentlength>
+        <D:getcontentlength>${isDirectory ? '0' : fileStat.size}</D:getcontentlength>
         <D:getlastmodified>${fileStat.mtime.toUTCString()}</D:getlastmodified>
       </D:prop>
       <D:status>HTTP/1.1 200 OK</D:status>
@@ -310,6 +338,8 @@ app.propfind('/webdav/*', (req, res) => {
 </D:multistatus>`;
     
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('DAV', '1, 2');
+    res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE, LOCK, UNLOCK');
     res.status(207).send(xml);
   } else {
     res.status(404).json({ error: 'Not a directory' });
@@ -344,8 +374,26 @@ app.get('/webdav/*', (req, res) => {
     // Serve file with proper headers
     res.setHeader('Content-Disposition', 'attachment');
     res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('DAV', '1, 2');
     res.download(filePath);
   }
+});
+
+// WebDAV GET request for root
+app.get('/webdav', (req, res) => {
+  const files = fs.readdirSync(pluginsDir);
+  const fileList = files.map(file => {
+    const fullPath = path.join(pluginsDir, file);
+    const fileStat = fs.statSync(fullPath);
+    return {
+      name: file,
+      size: fileStat.size,
+      isDirectory: fileStat.isDirectory(),
+      modified: fileStat.mtime
+    };
+  });
+  res.setHeader('DAV', '1, 2');
+  res.json(fileList);
 });
 
 // Serve static files (for admin interface)
