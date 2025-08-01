@@ -18,14 +18,29 @@ const PORT = process.env.PORT || 3000;
 // Trust proxy for Railway deployment
 app.set('trust proxy', 1);
 
-// Security middleware
+// Security middleware - DISABLE for WebDAV compatibility
 app.use(helmet({
-  contentSecurityPolicy: false, // Disable CSP for WebDAV compatibility
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false,
+  dnsPrefetchControl: false,
+  frameguard: false,
+  hidePoweredBy: false,
+  hsts: false,
+  ieNoOpen: false,
+  noSniff: false,
+  permittedCrossDomainPolicies: false,
+  referrerPolicy: false,
+  xssFilter: false
 }));
-app.use(compression());
+
+// CORS - Allow all origins for WebDAV
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'https://app--plugin-vault-be37ceb5.base44.app',
-  credentials: true
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'HEAD', 'OPTIONS', 'PROPFIND', 'PUT', 'DELETE', 'MKCOL', 'COPY', 'MOVE', 'LOCK', 'UNLOCK'],
+  allowedHeaders: ['*']
 }));
 
 // Method override for WebDAV methods
