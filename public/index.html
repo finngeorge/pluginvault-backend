@@ -3,244 +3,323 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Plugin Vault Admin</title>
+    <title>Plugin Vault - File Manager</title>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            padding: 20px;
+            color: #333;
         }
-        
+
         .container {
             max-width: 1200px;
             margin: 0 auto;
-            background: white;
-            border-radius: 12px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            overflow: hidden;
+            padding: 20px;
         }
-        
+
         .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px;
             text-align: center;
+            margin-bottom: 30px;
+            color: white;
         }
-        
+
         .header h1 {
             font-size: 2.5rem;
             margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
         }
-        
+
         .header p {
-            opacity: 0.9;
             font-size: 1.1rem;
+            opacity: 0.9;
         }
-        
-        .content {
-            padding: 30px;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
-            margin-bottom: 30px;
-        }
-        
-        .stat-card {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            text-align: center;
-            border-left: 4px solid #667eea;
-        }
-        
-        .stat-number {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #667eea;
-        }
-        
-        .stat-label {
-            color: #6c757d;
-            margin-top: 5px;
-        }
-        
-        .section {
-            margin-bottom: 30px;
-        }
-        
-        .section h2 {
-            color: #333;
-            margin-bottom: 15px;
-            font-size: 1.5rem;
-        }
-        
-        .plugin-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 20px;
-        }
-        
-        .plugin-type {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 20px;
-            border: 1px solid #e9ecef;
-        }
-        
-        .plugin-type h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.2rem;
-        }
-        
-        .plugin-list {
-            list-style: none;
-        }
-        
-        .plugin-item {
+
+        .card {
             background: white;
-            padding: 10px;
-            margin-bottom: 8px;
-            border-radius: 4px;
-            border: 1px solid #e9ecef;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .status {
             display: flex;
-            justify-content: space-between;
             align-items: center;
-        }
-        
-        .plugin-name {
-            font-weight: 500;
-            color: #333;
-        }
-        
-        .plugin-size {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-        
-        .upload-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
+            gap: 10px;
             margin-bottom: 20px;
         }
-        
+
+        .status-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #4CAF50;
+            animation: pulse 2s infinite;
+        }
+
+        .status-indicator.error {
+            background: #f44336;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+
+        .upload-section {
+            margin-bottom: 30px;
+        }
+
         .upload-form {
             display: grid;
-            grid-template-columns: 1fr 1fr 1fr auto;
+            grid-template-columns: 1fr 1fr auto;
             gap: 15px;
             align-items: end;
         }
-        
+
         .form-group {
             display: flex;
             flex-direction: column;
         }
-        
+
         .form-group label {
             margin-bottom: 5px;
-            font-weight: 500;
-            color: #333;
+            font-weight: 600;
+            color: #555;
         }
-        
-        .form-group input, .form-group select {
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            font-size: 1rem;
-        }
-        
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-        
-        .btn-primary {
-            background: #667eea;
-            color: white;
-        }
-        
-        .btn-primary:hover {
-            background: #5a6fd8;
-        }
-        
-        .btn-danger {
-            background: #dc3545;
-            color: white;
-        }
-        
-        .btn-danger:hover {
-            background: #c82333;
-        }
-        
-        .btn-sm {
-            padding: 5px 10px;
-            font-size: 0.9rem;
-        }
-        
-        .webdav-info {
-            background: #e3f2fd;
-            border: 1px solid #2196f3;
+
+        .form-group select,
+        .form-group input[type="file"] {
+            padding: 12px;
+            border: 2px solid #e0e0e0;
             border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group select:focus,
+        .form-group input[type="file"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+
+        .plugins-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .plugin-category {
+            background: #f8f9fa;
+            border-radius: 10px;
             padding: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .plugin-category h3 {
+            margin-bottom: 15px;
+            color: #333;
+            font-size: 1.2rem;
+        }
+
+        .plugin-list {
+            list-style: none;
+        }
+
+        .plugin-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin-bottom: 8px;
+            background: white;
+            border-radius: 6px;
+            border: 1px solid #e0e0e0;
+            transition: all 0.3s;
+        }
+
+        .plugin-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transform: translateX(5px);
+        }
+
+        .plugin-info {
+            flex: 1;
+        }
+
+        .plugin-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 4px;
+        }
+
+        .plugin-size {
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .plugin-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            opacity: 0.5;
+        }
+
+        .webdav-info {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 10px;
             margin-bottom: 20px;
         }
-        
+
         .webdav-info h3 {
-            color: #1976d2;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
         }
-        
-        .webdav-info code {
-            background: #f5f5f5;
-            padding: 2px 6px;
-            border-radius: 3px;
+
+        .webdav-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .detail-item {
+            background: rgba(255,255,255,0.1);
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        .detail-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .detail-value {
+            font-weight: 600;
             font-family: monospace;
         }
-        
+
+        .copy-btn {
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            margin-left: 8px;
+        }
+
+        .copy-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
         .loading {
             text-align: center;
-            padding: 20px;
-            color: #6c757d;
+            padding: 40px;
+            color: #666;
         }
-        
-        .error {
-            background: #f8d7da;
-            color: #721c24;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
         }
-        
-        .success {
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+
+        .alert-success {
             background: #d4edda;
             color: #155724;
-            padding: 10px;
-            border-radius: 4px;
-            margin-bottom: 15px;
+            border: 1px solid #c3e6cb;
         }
-        
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
         @media (max-width: 768px) {
             .upload-form {
                 grid-template-columns: 1fr;
             }
             
-            .plugin-grid {
+            .plugins-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .webdav-details {
                 grid-template-columns: 1fr;
             }
         }
@@ -252,109 +331,145 @@
             <h1>🎵 Plugin Vault</h1>
             <p>WebDAV Server for Audio Production Plugins</p>
         </div>
-        
-        <div class="content">
-            <div class="webdav-info">
-                <h3>🌐 WebDAV Connection</h3>
-                <p><strong>URL:</strong> <code id="webdav-url">http://localhost:3000/webdav</code></p>
-                <p><strong>Username:</strong> <code>admin</code> | <strong>Password:</strong> <code>password</code></p>
-                <p>Connect via macOS Finder: <code>Cmd + K</code> → Enter WebDAV URL</p>
+
+        <div class="card">
+            <div class="status">
+                <div class="status-indicator" id="statusIndicator"></div>
+                <span id="statusText">Checking server status...</span>
             </div>
-            
-            <div class="stats" id="stats">
-                <div class="loading">Loading statistics...</div>
-            </div>
-            
-            <div class="section">
-                <h2>📤 Upload Plugin</h2>
-                <div class="upload-section">
-                    <form class="upload-form" id="upload-form">
-                        <div class="form-group">
-                            <label for="plugin-type">Plugin Type</label>
-                            <select id="plugin-type" required>
-                                <option value="">Select type...</option>
-                                <option value="vst">VST</option>
-                                <option value="vst3">VST3</option>
-                                <option value="au">AU (Audio Unit)</option>
-                                <option value="aax">AAX</option>
-                                <option value="standalone">Standalone</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="plugin-name">Plugin Name</label>
-                            <input type="text" id="plugin-name" placeholder="e.g., my-plugin.vst3" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="plugin-file">Plugin File</label>
-                            <input type="file" id="plugin-file" required>
-                        </div>
-                        <button type="submit" class="btn btn-primary">Upload Plugin</button>
-                    </form>
+        </div>
+
+        <div class="card webdav-info">
+            <h3>🌐 WebDAV Connection Info</h3>
+            <div class="webdav-details">
+                <div class="detail-item">
+                    <div class="detail-label">Server URL</div>
+                    <div class="detail-value">
+                        https://pluginvault-backend-production.up.railway.app/webdav
+                        <button class="copy-btn" onclick="copyToClipboard('https://pluginvault-backend-production.up.railway.app/webdav')">Copy</button>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Username</div>
+                    <div class="detail-value">
+                        admin
+                        <button class="copy-btn" onclick="copyToClipboard('admin')">Copy</button>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-label">Password</div>
+                    <div class="detail-value">
+                        password
+                        <button class="copy-btn" onclick="copyToClipboard('password')">Copy</button>
+                    </div>
                 </div>
             </div>
-            
-            <div class="section">
-                <h2>📁 Plugin Library</h2>
-                <div class="plugin-grid" id="plugin-grid">
-                    <div class="loading">Loading plugins...</div>
+            <div style="margin-top: 15px; font-size: 0.9rem; opacity: 0.8;">
+                💡 <strong>Note:</strong> While macOS Finder may have connection issues, Cyberduck works reliably. 
+                You can also use this web interface to manage your plugins.
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="upload-section">
+                <h3>📁 Upload Plugin</h3>
+                <form class="upload-form" id="uploadForm">
+                    <div class="form-group">
+                        <label for="pluginType">Plugin Type</label>
+                        <select id="pluginType" name="type" required>
+                            <option value="vst">VST</option>
+                            <option value="vst3">VST3</option>
+                            <option value="au">AU (Audio Unit)</option>
+                            <option value="aax">AAX</option>
+                            <option value="standalone">Standalone</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="pluginFile">Plugin File</label>
+                        <input type="file" id="pluginFile" name="plugin" accept=".vst,.vst3,.component,.bundle,.app,.dmg,.pkg" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Upload Plugin</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>📦 Plugin Library</h3>
+            <div id="pluginsContainer">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Loading plugins...
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const API_BASE = '/api';
-        
-        // Update WebDAV URL based on current host
-        document.getElementById('webdav-url').textContent = `${window.location.protocol}//${window.location.host}/webdav`;
-        
-        // Load statistics
-        async function loadStats() {
+        const API_BASE = 'https://pluginvault-backend-production.up.railway.app/api';
+        const WEBDAV_BASE = 'https://pluginvault-backend-production.up.railway.app/webdav';
+
+        // Check server status
+        async function checkStatus() {
             try {
                 const response = await fetch(`${API_BASE}/health`);
                 const data = await response.json();
                 
-                const statsHtml = `
-                    <div class="stat-card">
-                        <div class="stat-number">${data.totalPlugins}</div>
-                        <div class="stat-label">Total Plugins</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${data.pluginTypes.length}</div>
-                        <div class="stat-label">Plugin Types</div>
-                    </div>
-                    <div class="stat-card">
-                        <div class="stat-number">${data.status}</div>
-                        <div class="stat-label">Server Status</div>
-                    </div>
-                `;
+                const statusIndicator = document.getElementById('statusIndicator');
+                const statusText = document.getElementById('statusText');
                 
-                document.getElementById('stats').innerHTML = statsHtml;
+                if (response.ok) {
+                    statusIndicator.className = 'status-indicator';
+                    statusText.textContent = `Server healthy - ${data.totalPlugins} plugins loaded`;
+                } else {
+                    throw new Error('Server not responding');
+                }
             } catch (error) {
-                document.getElementById('stats').innerHTML = '<div class="error">Failed to load statistics</div>';
+                const statusIndicator = document.getElementById('statusIndicator');
+                const statusText = document.getElementById('statusText');
+                
+                statusIndicator.className = 'status-indicator error';
+                statusText.textContent = 'Server connection failed';
             }
         }
-        
+
         // Load plugins
         async function loadPlugins() {
             try {
                 const response = await fetch(`${API_BASE}/plugins`);
                 const plugins = await response.json();
                 
-                let html = '';
-                for (const [type, pluginList] of Object.entries(plugins)) {
+                const container = document.getElementById('pluginsContainer');
+                
+                if (Object.values(plugins).every(type => type.length === 0)) {
+                    container.innerHTML = `
+                        <div class="empty-state">
+                            <div>📁</div>
+                            <h3>No plugins uploaded yet</h3>
+                            <p>Upload your first plugin using the form above</p>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                let html = '<div class="plugins-grid">';
+                
+                for (const [type, typePlugins] of Object.entries(plugins)) {
+                    if (typePlugins.length === 0) continue;
+                    
                     html += `
-                        <div class="plugin-type">
-                            <h3>${type.toUpperCase()}</h3>
-                            ${pluginList.length === 0 ? '<p style="color: #6c757d;">No plugins</p>' : ''}
+                        <div class="plugin-category">
+                            <h3>${type.toUpperCase()} Plugins (${typePlugins.length})</h3>
                             <ul class="plugin-list">
-                                ${pluginList.map(plugin => `
+                                ${typePlugins.map(plugin => `
                                     <li class="plugin-item">
-                                        <div>
+                                        <div class="plugin-info">
                                             <div class="plugin-name">${plugin.name}</div>
-                                            <div class="plugin-size">${formatBytes(plugin.size)}</div>
+                                            <div class="plugin-size">${formatFileSize(plugin.size)}</div>
                                         </div>
-                                        <button class="btn btn-danger btn-sm" onclick="deletePlugin('${type}', '${plugin.name}')">Delete</button>
+                                        <div class="plugin-actions">
+                                            <button class="btn btn-small btn-primary" onclick="downloadPlugin('${type}', '${plugin.name}')">Download</button>
+                                            <button class="btn btn-small btn-danger" onclick="deletePlugin('${type}', '${plugin.name}')">Delete</button>
+                                        </div>
                                     </li>
                                 `).join('')}
                             </ul>
@@ -362,63 +477,57 @@
                     `;
                 }
                 
-                document.getElementById('plugin-grid').innerHTML = html;
+                html += '</div>';
+                container.innerHTML = html;
+                
             } catch (error) {
-                document.getElementById('plugin-grid').innerHTML = '<div class="error">Failed to load plugins</div>';
+                console.error('Error loading plugins:', error);
+                document.getElementById('pluginsContainer').innerHTML = `
+                    <div class="alert alert-error">
+                        Error loading plugins: ${error.message}
+                    </div>
+                `;
             }
         }
-        
+
         // Upload plugin
-        document.getElementById('upload-form').addEventListener('submit', async (e) => {
+        document.getElementById('uploadForm').addEventListener('submit', async (e) => {
             e.preventDefault();
             
-            const type = document.getElementById('plugin-type').value;
-            const name = document.getElementById('plugin-name').value;
-            const file = document.getElementById('plugin-file').files[0];
+            const formData = new FormData();
+            const fileInput = document.getElementById('pluginFile');
+            const typeSelect = document.getElementById('pluginType');
             
-            if (!type || !name || !file) {
-                alert('Please fill in all fields');
+            if (!fileInput.files[0]) {
+                showAlert('Please select a file to upload', 'error');
                 return;
             }
+            
+            formData.append('plugin', fileInput.files[0]);
+            formData.append('type', typeSelect.value);
             
             try {
-                const reader = new FileReader();
-                reader.onload = async (e) => {
-                    const base64Data = e.target.result.split(',')[1];
-                    
-                    const response = await fetch(`${API_BASE}/plugins/upload`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            type,
-                            name,
-                            data: base64Data
-                        })
-                    });
-                    
-                    if (response.ok) {
-                        showMessage('Plugin uploaded successfully!', 'success');
-                        loadStats();
-                        loadPlugins();
-                        document.getElementById('upload-form').reset();
-                    } else {
-                        const error = await response.json();
-                        showMessage(`Upload failed: ${error.error}`, 'error');
-                    }
-                };
-                reader.readAsDataURL(file);
+                const response = await fetch(`${API_BASE}/plugins/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                if (response.ok) {
+                    showAlert('Plugin uploaded successfully!', 'success');
+                    fileInput.value = '';
+                    loadPlugins();
+                } else {
+                    const error = await response.json();
+                    showAlert(`Upload failed: ${error.error}`, 'error');
+                }
             } catch (error) {
-                showMessage('Upload failed', 'error');
+                showAlert(`Upload failed: ${error.message}`, 'error');
             }
         });
-        
+
         // Delete plugin
         async function deletePlugin(type, name) {
-            if (!confirm(`Are you sure you want to delete ${name}?`)) {
-                return;
-            }
+            if (!confirm(`Are you sure you want to delete ${name}?`)) return;
             
             try {
                 const response = await fetch(`${API_BASE}/plugins/${type}/${encodeURIComponent(name)}`, {
@@ -426,45 +535,58 @@
                 });
                 
                 if (response.ok) {
-                    showMessage('Plugin deleted successfully!', 'success');
-                    loadStats();
+                    showAlert('Plugin deleted successfully!', 'success');
                     loadPlugins();
                 } else {
                     const error = await response.json();
-                    showMessage(`Delete failed: ${error.error}`, 'error');
+                    showAlert(`Delete failed: ${error.error}`, 'error');
                 }
             } catch (error) {
-                showMessage('Delete failed', 'error');
+                showAlert(`Delete failed: ${error.message}`, 'error');
             }
         }
-        
+
+        // Download plugin
+        function downloadPlugin(type, name) {
+            const url = `${WEBDAV_BASE}/${type}/${encodeURIComponent(name)}`;
+            window.open(url, '_blank');
+        }
+
         // Utility functions
-        function formatBytes(bytes) {
+        function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
-        
-        function showMessage(message, type) {
-            const messageDiv = document.createElement('div');
-            messageDiv.className = type;
-            messageDiv.textContent = message;
-            document.querySelector('.content').insertBefore(messageDiv, document.querySelector('.content').firstChild);
+
+        function showAlert(message, type) {
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
             
-            setTimeout(() => {
-                messageDiv.remove();
-            }, 5000);
+            const container = document.querySelector('.container');
+            container.insertBefore(alert, container.firstChild);
+            
+            setTimeout(() => alert.remove(), 5000);
         }
-        
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showAlert('Copied to clipboard!', 'success');
+            }).catch(() => {
+                showAlert('Failed to copy to clipboard', 'error');
+            });
+        }
+
         // Initialize
-        loadStats();
+        checkStatus();
         loadPlugins();
         
         // Refresh every 30 seconds
         setInterval(() => {
-            loadStats();
+            checkStatus();
             loadPlugins();
         }, 30000);
     </script>
