@@ -1,0 +1,4 @@
+# Allow all HTTP methods for WebDAV
+/webdav/*  /webdav/:splat  200
+/api/*     /api/:splat      200
+/admin/*   /admin/:splat    200 

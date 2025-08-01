@@ -1,14 +1,24 @@
 services:
-  - type: web
-    name: plugin-vault-backend
-    env: node
-    plan: free
-    buildCommand: npm ci --omit=dev
-    startCommand: npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
-      - key: PORT
-        value: 10000
-    healthCheckPath: /api/health
-    autoDeploy: true 
+    - type: web
+      name: plugin-vault-backend
+      env: node
+      plan: free
+      buildCommand: npm ci --omit=dev
+      startCommand: npm start
+      envVars:
+          - key: NODE_ENV
+            value: production
+          - key: PORT
+            value: 10000
+      healthCheckPath: /api/health
+      autoDeploy: true
+      headers:
+          - path: /webdav/*
+            name: Access-Control-Allow-Methods
+            value: "GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE, LOCK, UNLOCK"
+          - path: /webdav/*
+            name: Access-Control-Allow-Headers
+            value: "*"
+          - path: /webdav/*
+            name: Access-Control-Allow-Origin
+            value: "*"

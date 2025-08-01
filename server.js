@@ -308,6 +308,51 @@ app.propfind('/webdav', (req, res) => {
   res.status(207).send(xml);
 });
 
+// Fallback: Handle PROPFIND as POST request (for platforms that block PROPFIND)
+app.post('/webdav', (req, res) => {
+  if (req.headers['x-http-method-override'] === 'PROPFIND') {
+    const stat = fs.statSync(pluginsDir);
+    const files = fs.readdirSync(pluginsDir);
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<D:multistatus xmlns:D="DAV:">
+  <D:response>
+    <D:href>/webdav</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype><D:collection/></D:resourcetype>
+        <D:getlastmodified>${stat.mtime.toUTCString()}</D:getlastmodified>
+        <D:getcontentlength>0</D:getcontentlength>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>
+  ${files.map(file => {
+    const fullPath = path.join(pluginsDir, file);
+    const fileStat = fs.statSync(fullPath);
+    const isDirectory = fileStat.isDirectory();
+    return `<D:response>
+    <D:href>/webdav/${file}</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype>${isDirectory ? '<D:collection/>' : ''}</D:resourcetype>
+        <D:getcontentlength>${isDirectory ? '0' : fileStat.size}</D:getcontentlength>
+        <D:getlastmodified>${fileStat.mtime.toUTCString()}</D:getlastmodified>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>`;
+  }).join('')}
+</D:multistatus>`;
+    
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('DAV', '1, 2');
+    res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE, LOCK, UNLOCK');
+    res.status(207).send(xml);
+  } else {
+    res.status(405).json({ error: 'Method not allowed' });
+  }
+});
+
 // WebDAV PROPFIND request (directory listing)
 app.propfind('/webdav/*', (req, res) => {
   const urlPath = req.url.replace('/webdav', '').replace(/^\/+/, '');
