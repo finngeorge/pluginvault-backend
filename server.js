@@ -228,12 +228,13 @@ app.propfind('/webdav/*', (req, res) => {
   ${files.map(file => {
     const fullPath = path.join(filePath, file);
     const fileStat = fs.statSync(fullPath);
+    const isDirectory = fileStat.isDirectory();
     return `<D:response>
     <D:href>${req.url}/${file}</D:href>
     <D:propstat>
       <D:prop>
-        <D:resourcetype></D:resourcetype>
-        <D:getcontentlength>${fileStat.size}</D:getcontentlength>
+        <D:resourcetype>${isDirectory ? '<D:collection/>' : ''}</D:resourcetype>
+        <D:getcontentlength>${isDirectory ? '' : fileStat.size}</D:getcontentlength>
         <D:getlastmodified>${fileStat.mtime.toUTCString()}</D:getlastmodified>
       </D:prop>
       <D:status>HTTP/1.1 200 OK</D:status>
