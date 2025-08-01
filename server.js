@@ -206,12 +206,32 @@ app.options('/webdav/*', (req, res) => {
   res.setHeader('DAV', '1, 2');
   res.setHeader('MS-Author-Via', 'DAV');
   res.setHeader('Content-Type', 'text/plain');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Pragma', 'no-cache');
+  res.status(200).end();
+});
+
+// WebDAV HEAD request
+app.head('/webdav/*', (req, res) => {
+  const urlPath = req.url.replace('/webdav', '').replace(/^\/+/, '');
+  const filePath = path.join(pluginsDir, urlPath);
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).end();
+  }
+  
+  const stat = fs.statSync(filePath);
+  res.setHeader('Content-Length', stat.size);
+  res.setHeader('Last-Modified', stat.mtime.toUTCString());
+  res.setHeader('Content-Type', 'application/octet-stream');
   res.status(200).end();
 });
 
 // WebDAV PROPFIND request (directory listing)
 app.propfind('/webdav/*', (req, res) => {
-  const filePath = path.join(pluginsDir, req.params[0] || '');
+  // Extract the path from the URL
+  const urlPath = req.url.replace('/webdav', '').replace(/^\/+/, '');
+  const filePath = path.join(pluginsDir, urlPath);
   
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
@@ -259,7 +279,9 @@ app.propfind('/webdav/*', (req, res) => {
 
 // WebDAV GET request
 app.get('/webdav/*', (req, res) => {
-  const filePath = path.join(pluginsDir, req.params[0] || '');
+  // Extract the path from the URL
+  const urlPath = req.url.replace('/webdav', '').replace(/^\/+/, '');
+  const filePath = path.join(pluginsDir, urlPath);
   
   if (!fs.existsSync(filePath)) {
     return res.status(404).json({ error: 'File not found' });
