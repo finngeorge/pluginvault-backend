@@ -7,7 +7,7 @@ const path = require('path');
 const fs = require('fs-extra');
 const multer = require('multer');
 const dotenv = require('dotenv');
-const { WebDAVServer, v2 } = require('webdav-server');
+const methodOverride = require('method-override');
 
 // Load environment variables
 dotenv.config();
@@ -24,6 +24,9 @@ app.use(cors({
   origin: process.env.FRONTEND_URL || 'https://app--plugin-vault-be37ceb5.base44.app',
   credentials: true
 }));
+
+// Method override for WebDAV methods
+app.use(methodOverride('_method'));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -65,18 +68,6 @@ const upload = multer({
     fileSize: 500 * 1024 * 1024 // 500MB limit
   }
 });
-
-// Create WebDAV server
-const webdavServer = new WebDAVServer({
-  httpAuthentication: new v2.HTTPDigestAuthentication('Plugin Vault', {
-    'admin': 'password'
-  }),
-  autoLoad: false,
-  autoSave: false
-});
-
-// Mount the plugins directory
-webdavServer.setFileSystem('/plugins', new v2.PhysicalFileSystem(pluginsDir));
 
 // API Routes
 app.get('/api/health', (req, res) => {
@@ -193,9 +184,100 @@ app.delete('/api/plugins/:type/:name', async (req, res) => {
   }
 });
 
-// WebDAV endpoint
-app.use('/webdav', (req, res) => {
-  webdavServer.executeRequest(req, res);
+// WebDAV authentication middleware
+app.use('/webdav', (req, res, next) => {
+  const auth = req.headers.authorization;
+  if (!auth || auth !== 'Basic YWRtaW46cGFzc3dvcmQ=') { // admin:password
+    res.setHeader('WWW-Authenticate', 'Basic realm="Plugin Vault"');
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  next();
+});
+
+// WebDAV OPTIONS request
+app.options('/webdav/*', (req, res) => {
+  res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE');
+  res.setHeader('DAV', '1, 2');
+  res.setHeader('MS-Author-Via', 'DAV');
+  res.status(200).end();
+});
+
+// WebDAV PROPFIND request (directory listing)
+app.propfind('/webdav/*', (req, res) => {
+  const filePath = path.join(pluginsDir, req.params[0] || '');
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  
+  const stat = fs.statSync(filePath);
+  if (stat.isDirectory()) {
+    const files = fs.readdirSync(filePath);
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<D:multistatus xmlns:D="DAV:">
+  <D:response>
+    <D:href>${req.url}</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype><D:collection/></D:resourcetype>
+        <D:getlastmodified>${stat.mtime.toUTCString()}</D:getlastmodified>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>
+  ${files.map(file => {
+    const fullPath = path.join(filePath, file);
+    const fileStat = fs.statSync(fullPath);
+    return `<D:response>
+    <D:href>${req.url}/${file}</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype></D:resourcetype>
+        <D:getcontentlength>${fileStat.size}</D:getcontentlength>
+        <D:getlastmodified>${fileStat.mtime.toUTCString()}</D:getlastmodified>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>`;
+  }).join('')}
+</D:multistatus>`;
+    
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.status(207).send(xml);
+  } else {
+    res.status(404).json({ error: 'Not a directory' });
+  }
+});
+
+// WebDAV GET request
+app.get('/webdav/*', (req, res) => {
+  const filePath = path.join(pluginsDir, req.params[0] || '');
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  
+  const stat = fs.statSync(filePath);
+  if (stat.isDirectory()) {
+    // List directory contents
+    const files = fs.readdirSync(filePath);
+    const fileList = files.map(file => {
+      const fullPath = path.join(filePath, file);
+      const fileStat = fs.statSync(fullPath);
+      return {
+        name: file,
+        size: fileStat.size,
+        isDirectory: fileStat.isDirectory(),
+        modified: fileStat.mtime
+      };
+    });
+    res.json(fileList);
+  } else {
+    // Serve file with proper headers
+    res.setHeader('Content-Disposition', 'attachment');
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.download(filePath);
+  }
 });
 
 // Serve static files (for admin interface)
