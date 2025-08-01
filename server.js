@@ -15,6 +15,9 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Trust proxy for Railway deployment
+app.set('trust proxy', 1);
+
 // Security middleware
 app.use(helmet({
   contentSecurityPolicy: false, // Disable CSP for WebDAV compatibility
@@ -28,10 +31,13 @@ app.use(cors({
 // Method override for WebDAV methods
 app.use(methodOverride('_method'));
 
-// Rate limiting
+// Rate limiting with proper configuration for proxy
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+  trustProxy: true
 });
 app.use(limiter);
 
@@ -199,6 +205,7 @@ app.options('/webdav/*', (req, res) => {
   res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND, PUT, DELETE, MKCOL, COPY, MOVE');
   res.setHeader('DAV', '1, 2');
   res.setHeader('MS-Author-Via', 'DAV');
+  res.setHeader('Content-Type', 'text/plain');
   res.status(200).end();
 });
 
