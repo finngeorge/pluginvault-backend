@@ -15,7 +15,9 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false, // Disable CSP for WebDAV compatibility
+}));
 app.use(compression());
 app.use(cors({
   origin: process.env.FRONTEND_URL || 'https://app--plugin-vault-be37ceb5.base44.app',
@@ -189,6 +191,61 @@ app.use('/webdav', (req, res, next) => {
   next();
 });
 
+// WebDAV OPTIONS request (required by some clients)
+app.options('/webdav/plugins/*', (req, res) => {
+  res.setHeader('Allow', 'GET, HEAD, OPTIONS, PROPFIND');
+  res.setHeader('DAV', '1, 2');
+  res.setHeader('MS-Author-Via', 'DAV');
+  res.status(200).end();
+});
+
+// WebDAV PROPFIND request (directory listing)
+app.propfind('/webdav/plugins/*', (req, res) => {
+  const filePath = path.join(pluginsDir, req.params[0] || '');
+  
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+  
+  const stat = fs.statSync(filePath);
+  if (stat.isDirectory()) {
+    const files = fs.readdirSync(filePath);
+    const xml = `<?xml version="1.0" encoding="utf-8"?>
+<D:multistatus xmlns:D="DAV:">
+  <D:response>
+    <D:href>${req.url}</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype><D:collection/></D:resourcetype>
+        <D:getlastmodified>${stat.mtime.toUTCString()}</D:getlastmodified>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>
+  ${files.map(file => {
+    const fullPath = path.join(filePath, file);
+    const fileStat = fs.statSync(fullPath);
+    return `<D:response>
+    <D:href>${req.url}/${file}</D:href>
+    <D:propstat>
+      <D:prop>
+        <D:resourcetype></D:resourcetype>
+        <D:getcontentlength>${fileStat.size}</D:getcontentlength>
+        <D:getlastmodified>${fileStat.mtime.toUTCString()}</D:getlastmodified>
+      </D:prop>
+      <D:status>HTTP/1.1 200 OK</D:status>
+    </D:propstat>
+  </D:response>`;
+  }).join('')}
+</D:multistatus>`;
+    
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.status(207).send(xml);
+  } else {
+    res.status(404).json({ error: 'Not a directory' });
+  }
+});
+
 // Serve plugins directory for WebDAV access
 app.get('/webdav/plugins/:path(*)', (req, res) => {
   const filePath = path.join(pluginsDir, req.params.path || '');
@@ -213,7 +270,9 @@ app.get('/webdav/plugins/:path(*)', (req, res) => {
     });
     res.json(fileList);
   } else {
-    // Serve file
+    // Serve file with proper headers
+    res.setHeader('Content-Disposition', 'attachment');
+    res.setHeader('Content-Type', 'application/octet-stream');
     res.download(filePath);
   }
 });
