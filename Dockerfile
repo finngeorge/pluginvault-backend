@@ -19,11 +19,11 @@ RUN mkdir -p plugins/vst plugins/vst3 plugins/au plugins/aax plugins/standalone
 RUN mkdir -p public
 
 # Expose port
-EXPOSE 10000
+EXPOSE 8080
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-    CMD node -e "require('http').get('http://localhost:10000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
+    CMD node -e "require('http').get('http://localhost:8080/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"
 
 # Start the application
 CMD ["npm", "start"] 

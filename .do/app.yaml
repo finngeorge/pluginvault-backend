@@ -1,0 +1,19 @@
+name: plugin-vault-backend
+services:
+  - name: web
+    source_dir: /
+    github:
+      repo: finngeorge/pluginvault-backend
+      branch: main
+    run_command: npm start
+    build_command: npm ci --omit=dev
+    environment_slug: node-js
+    instance_count: 1
+    instance_size_slug: basic-xxs
+    routes:
+      - path: /
+    envs:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 8080 
